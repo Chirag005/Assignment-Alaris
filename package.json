@@ -1,0 +1,8 @@
+{
+  "name": "research-papers-viewer",
+  "version": "1.0.0",
+  "description": "Research Papers Database Viewer - Assignment",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
