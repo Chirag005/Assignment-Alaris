@@ -293,6 +293,11 @@
                     fetch('/api/metadata')
                 ]);
 
+                // Check if responses are OK
+                if (!papersRes.ok) throw new Error(`Papers API returned ${papersRes.status}: ${papersRes.statusText}`);
+                if (!edgesRes.ok) throw new Error(`Edges API returned ${edgesRes.status}: ${edgesRes.statusText}`);
+                if (!metadataRes.ok) throw new Error(`Metadata API returned ${metadataRes.status}: ${metadataRes.statusText}`);
+
                 allData.papers = await papersRes.json();
                 allData.edges = await edgesRes.json();
                 allData.metadata = await metadataRes.json();
@@ -300,11 +305,18 @@
                 updateStats();
                 displayData();
             } catch (error) {
+                console.error('Full error:', error);
                 document.getElementById('dataContainer').innerHTML = `
                     <div class="error">
                         <h3>❌ Error Loading Data</h3>
-                        <p>${error.message}</p>
-                        <p style="margin-top: 10px;">Make sure the API routes are deployed and Supabase is accessible.</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p style="margin-top: 15px;"><strong>Possible causes:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>Environment variables not set in Vercel (DB_PASSWORD, etc.)</li>
+                            <li>API routes not deployed properly</li>
+                            <li>Database connection issue</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-size: 0.9rem;">Check browser console (F12) for more details.</p>
                     </div>
                 `;
             }
