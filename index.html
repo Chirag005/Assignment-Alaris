@@ -286,6 +286,21 @@
             try {
                 document.getElementById('dataContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading data...</p></div>';
 
+                // Helper to check response and get error details
+                const checkResponse = async (res, name) => {
+                    if (!res.ok) {
+                        let details = '';
+                        try {
+                            const json = await res.json();
+                            details = json.details || json.error || JSON.stringify(json);
+                        } catch (e) {
+                            details = await res.text();
+                        }
+                        throw new Error(`${name} API Error (${res.status}): ${details || res.statusText}`);
+                    }
+                    return res.json();
+                };
+
                 // Fetch all data from API routes
                 const [papersRes, edgesRes, metadataRes] = await Promise.all([
                     fetch('/api/papers'),
@@ -293,14 +308,9 @@
                     fetch('/api/metadata')
                 ]);
 
-                // Check if responses are OK
-                if (!papersRes.ok) throw new Error(`Papers API returned ${papersRes.status}: ${papersRes.statusText}`);
-                if (!edgesRes.ok) throw new Error(`Edges API returned ${edgesRes.status}: ${edgesRes.statusText}`);
-                if (!metadataRes.ok) throw new Error(`Metadata API returned ${metadataRes.status}: ${metadataRes.statusText}`);
-
-                allData.papers = await papersRes.json();
-                allData.edges = await edgesRes.json();
-                allData.metadata = await metadataRes.json();
+                allData.papers = await checkResponse(papersRes, 'Papers');
+                allData.edges = await checkResponse(edgesRes, 'Edges');
+                allData.metadata = await checkResponse(metadataRes, 'Metadata');
 
                 updateStats();
                 displayData();
@@ -309,14 +319,15 @@
                 document.getElementById('dataContainer').innerHTML = `
                     <div class="error">
                         <h3>❌ Error Loading Data</h3>
-                        <p><strong>Error:</strong> ${error.message}</p>
-                        <p style="margin-top: 15px;"><strong>Possible causes:</strong></p>
+                        <p><strong>Error Details:</strong></p>
+                        <pre style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; white-space: pre-wrap; word-break: break-word;">${error.message}</pre>
+                        
+                        <p style="margin-top: 15px;"><strong>Troubleshooting:</strong></p>
                         <ul style="margin-left: 20px; margin-top: 5px;">
-                            <li>Environment variables not set in Vercel (DB_PASSWORD, etc.)</li>
-                            <li>API routes not deployed properly</li>
-                            <li>Database connection issue</li>
+                            <li>If error is "password authentication failed": Check DB_PASSWORD in Vercel.</li>
+                            <li>If error is "getaddrinfo EAI_AGAIN": Check DB_HOST.</li>
+                            <li>If error is "connect ETIMEDOUT": Check if Supabase is paused or blocked.</li>
                         </ul>
-                        <p style="margin-top: 15px; font-size: 0.9rem;">Check browser console (F12) for more details.</p>
                     </div>
                 `;
             }
